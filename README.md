@@ -25,3 +25,7 @@ This project reads wind speed from an RS485 wind sensor and transmits it wireles
 | XBee TX/RX  | Serial (Pins 0, 1) |
 | Sensor VCC  | 12V |
 | Sensor GND  | GND |
+
+The Python Code uses the Digi XBee library: https://xbplib.readthedocs.io/en/latest/index.html
+
+Pip command: pip install digi-xbee
