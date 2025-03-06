@@ -1,17 +1,52 @@
 import serial
 import struct
 import time
+import sqlite3
 from digi.xbee.devices import XBeeDevice
 
-# XBee serial port
+# ✅ XBee serial port
 PORT = "/dev/tty.usbserial-0001"
 BAUD_RATE = 9600  # Match your XBee settings
+MAX_RETRIES = 10  # Maximum attempts to open the device
+DB_FILE = "wind_data.db"  # SQLite database file
 
-# Maximum attempts to open the device
-MAX_RETRIES = 10
+# ✅ Initialize SQLite Database
+def init_db():
+    """Creates the SQLite database and table if it doesn't exist."""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS wind_speed (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT DEFAULT (datetime('now', 'localtime')),
+            sender TEXT,
+            speed_mps REAL,
+            speed_mph REAL,
+            speed_knots REAL
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
 
-# Open XBee with retries
+# ✅ Function to Insert Wind Speed Data into SQLite
+def insert_wind_speed(sender, speed_mps, speed_mph, speed_knots):
+    """Insert wind speed data into SQLite database."""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        "INSERT INTO wind_speed (sender, speed_mps, speed_mph, speed_knots) VALUES (?, ?, ?, ?)",
+        (sender, speed_mps, speed_mph, speed_knots),
+    )
+    
+    conn.commit()
+    conn.close()
+
+# ✅ Function to Open XBee Device with Retries
 def open_xbee_device(port, baud_rate, max_retries=10):
+    """Attempts to open the XBee device, retrying if needed."""
     device = XBeeDevice(port, baud_rate)
     for attempt in range(1, max_retries + 1):
         try:
@@ -28,24 +63,35 @@ def open_xbee_device(port, baud_rate, max_retries=10):
                 return None
     return None
 
-# Callback Function for Incoming Data
+# ✅ Callback Function for Receiving XBee Data
 def data_received_callback(xbee_message):
-    sender = xbee_message.remote_device.get_64bit_addr()  # Get sender address
+    sender = str(xbee_message.remote_device.get_64bit_addr())  # Convert sender address to string
     raw_data = xbee_message.data  # Received binary data
 
-    # Ensure correct data length
+    # ✅ Ensure correct data length
     if len(raw_data) != 7:
+        print(f"⚠️ Malformed packet received from {sender}")
         return  # Ignore malformed packets
 
-    # Extract and unpack wind speed (Little-Endian float)
+    # ✅ Extract and unpack wind speed (Little-Endian float)
     wind_speed = struct.unpack("<f", raw_data[1:5])[0]
     wind_mph = wind_speed * 2.23694  # Convert to mph
-    wind_knot = wind_speed * 1.94384  # Convert to knots
+    wind_knots = wind_speed * 1.94384  # Convert to knots
 
-    # Print only sender address & wind speed
-    print(f"📡 From {sender}: Wind Speed =\n{wind_speed:.2f} m/s\n{wind_mph:.2f} mph\n{wind_knot:.2f} knots")
+    # ✅ Store in Database
+    insert_wind_speed(sender, wind_speed, wind_mph, wind_knots)
 
-# Try to Open XBee Device
+    # ✅ Print received data
+    print(f"📡 From {sender}:")
+    print(f"   🌬️ Wind Speed: {wind_speed:.2f} m/s")
+    print(f"   🌬️ Wind Speed: {wind_mph:.2f} mph")
+    print(f"   🌬️ Wind Speed: {wind_knots:.2f} knots")
+    print(f"✅ Data saved to database.\n")
+
+# ✅ Initialize Database
+init_db()
+
+# ✅ Try to Open XBee Device
 device = open_xbee_device(PORT, BAUD_RATE, MAX_RETRIES)
 
 if device:
