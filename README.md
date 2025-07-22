@@ -29,3 +29,9 @@ This project reads wind speed from an RS485 wind sensor and transmits it wireles
 The Python Code uses the Digi XBee library: https://xbplib.readthedocs.io/en/latest/index.html
 
 Pip command: pip install digi-xbee
+
+## To Do
+- Store data in Database
+- Create display 
+- Add direction sensor
+- Pull additional data from web (tides and met office)
