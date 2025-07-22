@@ -4,13 +4,13 @@ import time
 import sqlite3
 from digi.xbee.devices import XBeeDevice
 
-# ✅ XBee serial port
+# XBee serial port
 PORT = "/dev/tty.usbserial-0001"
 BAUD_RATE = 9600  # Match your XBee settings
 MAX_RETRIES = 10  # Maximum attempts to open the device
-DB_FILE = "wind_data.db"  # SQLite database file
+DB_FILE = "wind_data.db"  # SQLite DB file
 
-# ✅ Initialize SQLite Database
+# Initialize SQLite DB
 def init_db():
     """Creates the SQLite database and table if it doesn't exist."""
     conn = sqlite3.connect(DB_FILE)
@@ -30,7 +30,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# ✅ Function to Insert Wind Speed Data into SQLite
+# Insert Wind Speed Data into DB
 def insert_wind_speed(sender, speed_mps, speed_mph, speed_knots):
     """Insert wind speed data into SQLite database."""
     conn = sqlite3.connect(DB_FILE)
@@ -44,67 +44,67 @@ def insert_wind_speed(sender, speed_mps, speed_mph, speed_knots):
     conn.commit()
     conn.close()
 
-# ✅ Function to Open XBee Device with Retries
+# Open XBee Device with Retries
 def open_xbee_device(port, baud_rate, max_retries=10):
     """Attempts to open the XBee device, retrying if needed."""
     device = XBeeDevice(port, baud_rate)
     for attempt in range(1, max_retries + 1):
         try:
-            print(f"🔄 Attempt {attempt}/{max_retries}: Opening XBee device...")
+            print(f"Attempt {attempt}/{max_retries}: Opening XBee device...")
             device.open()
-            print("✅ XBee device opened successfully!")
+            print("XBee device opened successfully!")
             return device  # Return the opened device
         except Exception as e:
-            print(f"⚠️ Attempt {attempt} failed: {e}")
+            print(f"Attempt {attempt} failed: {e}")
             if attempt < max_retries:
                 time.sleep(1)  # Wait before retrying
             else:
-                print("❌ Failed to open XBee device after multiple attempts.")
+                print("Failed to open XBee device after multiple attempts.")
                 return None
     return None
 
-# ✅ Callback Function for Receiving XBee Data
+# Callback Function for Receiving XBee Data
 def data_received_callback(xbee_message):
     sender = str(xbee_message.remote_device.get_64bit_addr())  # Convert sender address to string
     raw_data = xbee_message.data  # Received binary data
 
-    # ✅ Ensure correct data length
+    # Ensure correct data length
     if len(raw_data) != 7:
         print(f"⚠️ Malformed packet received from {sender}")
         return  # Ignore malformed packets
 
-    # ✅ Extract and unpack wind speed (Little-Endian float)
+    # Extract and unpack wind speed (Little-Endian float)
     wind_speed = struct.unpack("<f", raw_data[1:5])[0]
     wind_mph = wind_speed * 2.23694  # Convert to mph
     wind_knots = wind_speed * 1.94384  # Convert to knots
 
-    # ✅ Store in Database
+    # Store in DB
     insert_wind_speed(sender, wind_speed, wind_mph, wind_knots)
 
-    # ✅ Print received data
+    # ✅ Print rx data
     print(f"📡 From {sender}:")
     print(f"   🌬️ Wind Speed: {wind_speed:.2f} m/s")
     print(f"   🌬️ Wind Speed: {wind_mph:.2f} mph")
     print(f"   🌬️ Wind Speed: {wind_knots:.2f} knots")
     print(f"✅ Data saved to database.\n")
 
-# ✅ Initialize Database
+# Initialize DB
 init_db()
 
-# ✅ Try to Open XBee Device
+# Attempt to Open XBee Device
 device = open_xbee_device(PORT, BAUD_RATE, MAX_RETRIES)
 
 if device:
     try:
-        print("✅ Listening for XBee broadcast messages...")
+        print("Listening for XBee broadcast messages...")
         device.add_data_received_callback(data_received_callback)
         input("Press Enter to exit...\n")  # Keeps the program running
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
 
     finally:
         device.close()
-        print("🔴 XBee receiver closed.")
+        print("XBee receiver closed.")
 else:
-    print("⚠️ Exiting program due to XBee connection failure.")
+    print("Exiting program due to XBee connection failure.")
