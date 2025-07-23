@@ -3,17 +3,17 @@
 #define RS485Transmit HIGH
 #define RS485Receive  LOW
 
-// ✅ RS485 Control Pin
+// RS485 Control Pin
 const int rs485ControlPin = 9;
 
-// ✅ Wind Sensor Modbus Request (Address 0x02, Read Wind Speed)
+// Wind Sensor Modbus Request (Address 0x02, Read Wind Speed)
 const byte windSpeedRequest[] = {0x02, 0x03, 0x00, 0x00, 0x00, 0x01, 0x84, 0x39};
 byte response[7];
 
-// ✅ XBee Setup
+// XBee Setup
 XBee xbee;
 
-// ✅ Data Structure for Transmission
+// Data Structure for Transmission
 typedef struct __attribute__((packed)) {
     uint8_t before_wrapper;  // Padding byte (fixed value)
     float wind_speed;        // Wind Speed (m/s)
@@ -21,7 +21,7 @@ typedef struct __attribute__((packed)) {
     uint8_t checksum;        // Checksum (XOR of all bytes)
 } WindData;
 
-// ✅ Compute XOR Checksum
+// Compute XOR Checksum
 uint8_t computeChecksum(WindData *data) {
     uint8_t *ptr = (uint8_t *)data;
     uint8_t checksum = 0;
@@ -37,11 +37,11 @@ void setup() {
     pinMode(rs485ControlPin, OUTPUT);
     digitalWrite(rs485ControlPin, RS485Receive);
     
-    Serial.println("✅ RS485 Wind Sensor & XBee Initialized");
+    Serial.println("RS485 Wind Sensor & XBee Initialized");
 }
 
 void loop() {
-    // ✅ Step 1: Request Wind Speed from RS485 Sensor
+    // Step 1: Request Wind Speed from RS485 Sensor
     digitalWrite(rs485ControlPin, RS485Transmit);  // Enable TX mode
     delay(10);  // Short delay for stability
 
@@ -51,7 +51,7 @@ void loop() {
     digitalWrite(rs485ControlPin, RS485Receive);  // Enable RX mode
     delay(100);  // Allow time for response
 
-    // ✅ Step 2: Read and Process Wind Speed Data
+    // Step 2: Read and Process Wind Speed Data
     if (Serial1.available() >= 7) {
         Serial1.readBytes(response, 7);
 
@@ -63,26 +63,26 @@ void loop() {
             Serial.print(windSpeed);
             Serial.println(" m/s");
 
-            // ✅ Step 3: Package Data in Struct
+            // Step 3: Package Data in Struct
             WindData windData;
             windData.before_wrapper = 6;
             windData.wind_speed = windSpeed;
             windData.after_wrapper = 6;
             windData.checksum = computeChecksum(&windData);
 
-            // ✅ Step 4: Send Wind Speed via XBee
+            // Step 4: Send Wind Speed via XBee
             sendWindSpeedXBee(&windData);
         } else {
-            Serial.println("⚠️ Invalid response from sensor");
+            Serial.println("Invalid response from sensor");
         }
     } else {
-        Serial.println("❌ No response from sensor");
+        Serial.println("No response from sensor");
     }
 
     delay(2000);  // Wait before next request
 }
 
-// ✅ Function to Send Packed Structure via XBee
+// Function to Send Packed Structure via XBee
 void sendWindSpeedXBee(WindData *data) {
     uint8_t *payload = (uint8_t *)data;
 
@@ -90,5 +90,5 @@ void sendWindSpeedXBee(WindData *data) {
     Tx64Request txRequest(broadcastAddress, payload, sizeof(WindData));
     xbee.send(txRequest);
 
-    Serial.println("✅ Wind Speed Sent via XBee (Struct Format)");
+    Serial.println("Wind Speed Sent via XBee (Struct Format)");
 }
