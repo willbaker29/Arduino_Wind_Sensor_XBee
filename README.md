@@ -26,6 +26,10 @@ This project reads wind speed from an RS485 wind sensor and transmits it wireles
 | Sensor VCC  | 12V |
 | Sensor GND  | GND |
 
+![Arduino Build](Images/arduinoMegaSender.png)
+
+![Full Sensor](Images/windSensor.png)
+
 The Python Code uses the Digi XBee library: https://xbplib.readthedocs.io/en/latest/index.html
 
 Pip command: pip install digi-xbee
