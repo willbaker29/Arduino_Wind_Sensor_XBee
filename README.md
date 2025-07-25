@@ -35,6 +35,7 @@ The Python Code uses the Digi XBee library: https://xbplib.readthedocs.io/en/lat
 Pip command: pip install digi-xbee
 
 ## To Do
+- 3D print enclosure
 - Store data in Database
 - Create display 
 - Add direction sensor
